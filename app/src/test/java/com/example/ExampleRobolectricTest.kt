@@ -61,5 +61,30 @@ class ExampleRobolectricTest {
     val alerts = repository.alerts.value
     assertTrue(alerts.isNotEmpty())
   }
+
+  @Test
+  fun `environmental data service generates non empty time series and aqi`() {
+    val series = com.vrntechnology.harpedge.data.repository.EnvironmentalDataService.generateTimeSeries(
+      nodeId = "NODE-001",
+      timeRange = com.vrntechnology.harpedge.data.model.TimeRange.TWENTY_FOUR_HOURS,
+      currentScenario = "NORMAL",
+      latestReading = null
+    )
+    assertTrue(series.isNotEmpty())
+
+    val aqi = com.vrntechnology.harpedge.data.repository.EnvironmentalDataService.computeAirQuality(
+      latestPoint = series.lastOrNull()
+    )
+    assertTrue(aqi.aqiScore >= 0)
+  }
+
+  @Test
+  fun `launch MainActivity directly`() {
+    val controller = org.robolectric.Robolectric.buildActivity(MainActivity::class.java).setup()
+    assertNotNull(controller.get())
+  }
 }
+
+
+
 

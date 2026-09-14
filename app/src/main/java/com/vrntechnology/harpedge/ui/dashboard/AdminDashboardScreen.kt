@@ -11,9 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vrntechnology.harpedge.data.model.*
+import com.vrntechnology.harpedge.data.repository.EnvironmentalDataService
 import com.vrntechnology.harpedge.ui.components.*
 import com.vrntechnology.harpedge.ui.theme.*
 
@@ -36,10 +35,21 @@ fun AdminDashboardScreen(
     onNavigateToEvents: () -> Unit,
     onNavigateToAnalytics: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToEnvironmental: () -> Unit = {},
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by dashboardViewModel.uiState.collectAsState()
+
+    var previewMetric by remember { mutableStateOf(EnvironmentalMetric.PM25) }
+    val previewPoints = remember(uiState.latestReadings, uiState.currentScenario, previewMetric) {
+        EnvironmentalDataService.generateTimeSeries(
+            nodeId = uiState.latestReadings?.nodeId ?: "NODE-001",
+            timeRange = TimeRange.TWENTY_FOUR_HOURS,
+            currentScenario = uiState.currentScenario,
+            latestReading = uiState.latestReadings
+        )
+    }
 
     val activeHazardEvent = uiState.events.firstOrNull { it.status == "ACTIVE" } ?: uiState.events.firstOrNull()
     val highestSeverity = uiState.events.maxByOrNull { it.severity.ordinal }?.severity ?: SeverityLevel.LOW
@@ -363,6 +373,128 @@ fun AdminDashboardScreen(
                             modifier = Modifier.weight(1f)
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Embedded Interactive Environmental Line/Area Chart Card
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("card_dashboard_environmental_preview"),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = HarpNavyElevated),
+                        border = BorderStroke(1.dp, HarpBorderColor)
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.ShowChart,
+                                        contentDescription = null,
+                                        tint = HarpTeal,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "ENVIRONMENTAL TRENDS (24H)",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = HarpTextSecondary,
+                                        letterSpacing = 0.8.sp
+                                    )
+                                }
+
+                                TextButton(
+                                    onClick = onNavigateToEnvironmental,
+                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "FULL CHARTS →",
+                                        fontSize = 11.sp,
+                                        color = HarpCyan,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Metric selection chips
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                listOf(
+                                    EnvironmentalMetric.PM25,
+                                    EnvironmentalMetric.TEMPERATURE,
+                                    EnvironmentalMetric.TVOC,
+                                    EnvironmentalMetric.WATER_LEVEL
+                                ).forEach { metric ->
+                                    val isSelected = previewMetric == metric
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { previewMetric = metric },
+                                        label = {
+                                            Text(
+                                                text = metric.displayName,
+                                                fontSize = 10.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                            )
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = HarpTeal.copy(alpha = 0.2f),
+                                            selectedLabelColor = HarpTeal,
+                                            containerColor = HarpNavyDark,
+                                            labelColor = HarpTextSecondary
+                                        ),
+                                        border = BorderStroke(1.dp, if (isSelected) HarpTeal else HarpBorderColor),
+                                        modifier = Modifier.testTag("chip_preview_${metric.name.lowercase()}")
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            val chartColor = when (previewMetric) {
+                                EnvironmentalMetric.TEMPERATURE -> RiskHigh
+                                EnvironmentalMetric.HUMIDITY -> HarpCyan
+                                EnvironmentalMetric.PM25, EnvironmentalMetric.PM10 -> HarpPurple
+                                EnvironmentalMetric.TVOC -> RiskCritical
+                                EnvironmentalMetric.WATER_LEVEL -> HarpCyan
+                                else -> HarpTeal
+                            }
+
+                            EnvironmentalLineAreaChart(
+                                points = previewPoints,
+                                metric = previewMetric,
+                                lineColor = chartColor
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Button(
+                                onClick = onNavigateToEnvironmental,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(40.dp)
+                                    .testTag("btn_open_environmental_dashboard"),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = HarpTeal.copy(alpha = 0.2f),
+                                    contentColor = HarpTeal
+                                ),
+                                border = BorderStroke(1.dp, HarpTeal.copy(alpha = 0.5f))
+                            ) {
+                                Icon(Icons.Default.Insights, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("OPEN ENVIRONMENTAL INTELLIGENCE", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -400,8 +532,23 @@ fun AdminDashboardScreen(
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    OutlinedButton(
+                        onClick = onNavigateToEnvironmental,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .testTag("btn_goto_env_charts"),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, HarpTeal.copy(alpha = 0.8f)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = HarpTeal)
+                    ) {
+                        Icon(Icons.Default.ShowChart, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("ENV CHARTS", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+
                     OutlinedButton(
                         onClick = onNavigateToAnalytics,
                         modifier = Modifier
@@ -413,8 +560,8 @@ fun AdminDashboardScreen(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = HarpCyan)
                     ) {
                         Icon(Icons.Default.Insights, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("AI ANALYTICS", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("ANALYTICS", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
 
                     OutlinedButton(
@@ -424,12 +571,12 @@ fun AdminDashboardScreen(
                             .height(44.dp)
                             .testTag("btn_goto_events"),
                         shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(1.dp, HarpTeal.copy(alpha = 0.6f)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = HarpTeal)
+                        border = BorderStroke(1.dp, HarpPurple.copy(alpha = 0.6f)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = HarpPurple)
                     ) {
                         Icon(Icons.Default.Timeline, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("EVENT TIMELINES", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("TIMELINES", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

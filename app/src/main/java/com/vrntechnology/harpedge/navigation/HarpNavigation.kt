@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -53,6 +54,7 @@ object HarpDestinations {
     const val SENSOR_HEALTH = "sensor_health/{nodeId}"
     const val FIELD_VERIFY = "field_verify/{eventId}"
     const val ANALYTICS = "analytics"
+    const val ENVIRONMENTAL_DASHBOARD = "environmental_dashboard"
     const val SETTINGS = "settings"
     const val AUDIT_LOGS = "audit_logs"
     const val PROFILE = "profile"
@@ -81,29 +83,33 @@ fun HarpNavGraph(
 
     val bottomNavItems = when (userRole) {
         UserRole.ADMIN -> listOf(
-            BottomNavItem("Home", HarpDestinations.DASHBOARD, Icons.Default.Dashboard, "tab_home"),
+            BottomNavItem("Environment", HarpDestinations.ENVIRONMENTAL_DASHBOARD, Icons.Default.ShowChart, "tab_environment"),
+            BottomNavItem("Overview", HarpDestinations.DASHBOARD, Icons.Default.Dashboard, "tab_home"),
             BottomNavItem("Nodes", HarpDestinations.NODES, Icons.Default.Sensors, "tab_nodes"),
             BottomNavItem("Map", HarpDestinations.MAP, Icons.Default.Map, "tab_map"),
-            BottomNavItem("Events", HarpDestinations.EVENTS, Icons.Default.Timeline, "tab_events"),
-            BottomNavItem("Settings", HarpDestinations.SETTINGS, Icons.Default.Settings, "tab_settings")
+            BottomNavItem("Events", HarpDestinations.EVENTS, Icons.Default.Timeline, "tab_events")
         )
         UserRole.AUTHORITY -> listOf(
-            BottomNavItem("Home", HarpDestinations.DASHBOARD, Icons.Default.Dashboard, "tab_home"),
+            BottomNavItem("Environment", HarpDestinations.ENVIRONMENTAL_DASHBOARD, Icons.Default.ShowChart, "tab_environment"),
+            BottomNavItem("Overview", HarpDestinations.DASHBOARD, Icons.Default.Dashboard, "tab_home"),
             BottomNavItem("Map", HarpDestinations.MAP, Icons.Default.Map, "tab_map"),
             BottomNavItem("Alerts", HarpDestinations.ALERTS, Icons.Default.Notifications, "tab_alerts"),
-            BottomNavItem("Events", HarpDestinations.EVENTS, Icons.Default.Timeline, "tab_events"),
-            BottomNavItem("Profile", HarpDestinations.PROFILE, Icons.Default.Person, "tab_profile")
+            BottomNavItem("Events", HarpDestinations.EVENTS, Icons.Default.Timeline, "tab_events")
         )
         UserRole.VIEWER -> listOf(
-            BottomNavItem("Home", HarpDestinations.DASHBOARD, Icons.Default.Dashboard, "tab_home"),
+            BottomNavItem("Environment", HarpDestinations.ENVIRONMENTAL_DASHBOARD, Icons.Default.ShowChart, "tab_environment"),
+            BottomNavItem("Overview", HarpDestinations.DASHBOARD, Icons.Default.Dashboard, "tab_home"),
             BottomNavItem("Map", HarpDestinations.MAP, Icons.Default.Map, "tab_map"),
-            BottomNavItem("Alerts", HarpDestinations.ALERTS, Icons.Default.Notifications, "tab_alerts"),
-            BottomNavItem("Profile", HarpDestinations.PROFILE, Icons.Default.Person, "tab_profile")
+            BottomNavItem("Alerts", HarpDestinations.ALERTS, Icons.Default.Notifications, "tab_alerts")
         )
     }
 
     val shouldShowBottomBar = currentUser != null &&
             currentRoute in bottomNavItems.map { it.route }
+
+    val startRoute = remember(currentUser != null) {
+        if (currentUser != null) HarpDestinations.ENVIRONMENTAL_DASHBOARD else HarpDestinations.LOGIN
+    }
 
     Scaffold(
         containerColor = HarpNavyDark,
@@ -121,7 +127,9 @@ fun HarpNavGraph(
                             onClick = {
                                 if (currentRoute != item.route) {
                                     navController.navigate(item.route) {
-                                        popUpTo(HarpDestinations.DASHBOARD) { saveState = true }
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
                                         launchSingleTop = true
                                         restoreState = true
                                     }
@@ -151,7 +159,7 @@ fun HarpNavGraph(
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = HarpDestinations.LOGIN,
+            startDestination = startRoute,
             modifier = Modifier.padding(paddingValues)
         ) {
             // Login / Auth
@@ -159,7 +167,7 @@ fun HarpNavGraph(
                 LoginScreen(
                     authViewModel = authViewModel,
                     onNavigateToDashboard = {
-                        navController.navigate(HarpDestinations.DASHBOARD) {
+                        navController.navigate(HarpDestinations.ENVIRONMENTAL_DASHBOARD) {
                             popUpTo(HarpDestinations.LOGIN) { inclusive = true }
                         }
                     }
@@ -180,6 +188,7 @@ fun HarpNavGraph(
                         onNavigateToEvents = { navController.navigate(HarpDestinations.EVENTS) },
                         onNavigateToAnalytics = { navController.navigate(HarpDestinations.ANALYTICS) },
                         onNavigateToSettings = { navController.navigate(HarpDestinations.SETTINGS) },
+                        onNavigateToEnvironmental = { navController.navigate(HarpDestinations.ENVIRONMENTAL_DASHBOARD) },
                         onSignOut = {
                             authViewModel.signOut()
                             navController.navigate(HarpDestinations.LOGIN) {
@@ -196,6 +205,7 @@ fun HarpNavGraph(
                         },
                         onNavigateToAlerts = { navController.navigate(HarpDestinations.ALERTS) },
                         onNavigateToEvents = { navController.navigate(HarpDestinations.EVENTS) },
+                        onNavigateToEnvironmental = { navController.navigate(HarpDestinations.ENVIRONMENTAL_DASHBOARD) },
                         onSignOut = {
                             authViewModel.signOut()
                             navController.navigate(HarpDestinations.LOGIN) {
@@ -207,6 +217,7 @@ fun HarpNavGraph(
                         dashboardViewModel = dashboardViewModel,
                         currentUser = currentUser,
                         onNavigateToMap = { navController.navigate(HarpDestinations.MAP) },
+                        onNavigateToEnvironmental = { navController.navigate(HarpDestinations.ENVIRONMENTAL_DASHBOARD) },
                         onSignOut = {
                             authViewModel.signOut()
                             navController.navigate(HarpDestinations.LOGIN) {
@@ -357,6 +368,16 @@ fun HarpNavGraph(
                     repository = harpRepository,
                     userRole = userRole,
                     onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // Comprehensive Environmental Intelligence Dashboard
+            composable(HarpDestinations.ENVIRONMENTAL_DASHBOARD) {
+                EnvironmentalDashboardScreen(
+                    repository = harpRepository,
+                    onNavigateBack = if (navController.previousBackStackEntry != null) {
+                        { navController.popBackStack() }
+                    } else null
                 )
             }
 

@@ -27,6 +27,7 @@ fun ViewerDashboardScreen(
     dashboardViewModel: DashboardViewModel,
     currentUser: UserProfile?,
     onNavigateToMap: () -> Unit,
+    onNavigateToEnvironmental: () -> Unit = {},
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -197,6 +198,23 @@ fun ViewerDashboardScreen(
                         statusColor = if ((r?.pm25 ?: 0.0) > 50.0) RiskHigh else RiskLow,
                         modifier = Modifier.weight(1f)
                     )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedButton(
+                    onClick = onNavigateToEnvironmental,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(42.dp)
+                        .testTag("btn_viewer_open_environmental"),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, HarpTeal.copy(alpha = 0.6f)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = HarpTeal)
+                ) {
+                    Icon(Icons.Default.ShowChart, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("VIEW DETAILED ENVIRONMENTAL CHARTS & AQI", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
 

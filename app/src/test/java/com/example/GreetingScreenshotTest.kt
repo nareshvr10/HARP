@@ -37,5 +37,20 @@ class GreetingScreenshotTest {
 
     composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/greeting.png")
   }
+
+  @Test
+  fun environmental_dashboard_renders() {
+    val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+    val harpRepo = com.vrntechnology.harpedge.data.repository.HarpRepository(context)
+    composeTestRule.setContent {
+      HarpEdgeTheme(darkTheme = true) {
+        com.vrntechnology.harpedge.ui.dashboard.EnvironmentalDashboardScreen(
+          repository = harpRepo,
+          onNavigateBack = {}
+        )
+      }
+    }
+  }
 }
+
 

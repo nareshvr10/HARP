@@ -88,7 +88,7 @@ fun MapScreen(
 
                     if (selectedNode != null && userRole != UserRole.VIEWER) {
                         TextButton(
-                            onClick = { onNavigateToNode(selectedNode!!.nodeId) }
+                            onClick = { selectedNode?.let { onNavigateToNode(it.nodeId) } }
                         ) {
                             Text("NODE DETAILS", fontSize = 11.sp, color = HarpCyan, fontWeight = FontWeight.Bold)
                         }

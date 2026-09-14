@@ -30,6 +30,7 @@ fun AuthorityDashboardScreen(
     onNavigateToVerify: (String) -> Unit,
     onNavigateToAlerts: () -> Unit,
     onNavigateToEvents: () -> Unit,
+    onNavigateToEnvironmental: () -> Unit = {},
     onSignOut: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -242,6 +243,63 @@ fun AuthorityDashboardScreen(
                     alert = alert,
                     onClick = { onNavigateToVerify(alert.eventId) }
                 )
+            }
+
+            // Environmental Telemetry Deep Dive
+            item {
+                Card(
+                    onClick = onNavigateToEnvironmental,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("card_authority_environmental_portal"),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = HarpNavyElevated),
+                    border = BorderStroke(1.dp, HarpTeal.copy(alpha = 0.5f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = HarpTeal.copy(alpha = 0.2f),
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.ShowChart,
+                                        contentDescription = null,
+                                        tint = HarpTeal,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Environmental Data Dashboard",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = HarpTextPrimary
+                                )
+                                Text(
+                                    text = "Micro-climate time-series, AQI & cross-node matrices",
+                                    fontSize = 11.sp,
+                                    color = HarpTextSecondary
+                                )
+                            }
+                        }
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = HarpTeal
+                        )
+                    }
+                }
             }
 
             item {
