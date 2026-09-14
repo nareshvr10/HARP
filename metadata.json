@@ -1,0 +1,6 @@
+{
+  "name": "HARP-Edge",
+  "description": "Hazard-Aware Resonant Pattern Edge Intelligence Network for real-time environmental monitoring, multi-hazard consensus, and early detection.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
